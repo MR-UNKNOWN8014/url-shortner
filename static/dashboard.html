@@ -1,0 +1,773 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>URL Shortener — Dashboard</title>
+  <link href="https://fonts.googleapis.com/css2?family=Syne:wght@400;600;700;800&family=Inter:wght@300;400;500&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet" />
+  <style>
+    /* Tokens */
+    :root {
+      --bg:        #0C0F1A;
+      --surface:   #131726;
+      --border:    #1E2438;
+      --accent:    #5C6FFF;
+      --accent2:   #C77DFF;
+      --success:   #2DD4A0;
+      --text:      #E8EAF0;
+      --muted:     #5A6080;
+      --danger:    #FF6B6B;
+    }
+
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+    body {
+      background: var(--bg);
+      color: var(--text);
+      font-family: 'Inter', sans-serif;
+      font-weight: 400;
+      min-height: 100vh;
+      line-height: 1.6;
+    }
+
+    /* Layout */
+    .shell {
+      max-width: 1100px;
+      margin: 0 auto;
+      padding: 48px 24px 80px;
+    }
+
+    /* Header */
+    header {
+      display: flex;
+      align-items: flex-end;
+      justify-content: space-between;
+      margin-bottom: 52px;
+      padding-bottom: 28px;
+      border-bottom: 1px solid var(--border);
+    }
+
+    .wordmark {
+      font-family: 'Syne', sans-serif;
+      font-weight: 800;
+      font-size: 1.5rem;
+      letter-spacing: -0.02em;
+      color: var(--text);
+    }
+
+    .wordmark span {
+      color: var(--accent);
+    }
+
+    .live-badge {
+      display: flex;
+      align-items: center;
+      gap: 7px;
+      font-size: 0.72rem;
+      font-weight: 500;
+      color: var(--success);
+      letter-spacing: 0.08em;
+      text-transform: uppercase;
+    }
+
+    .live-badge::before {
+      content: '';
+      width: 7px;
+      height: 7px;
+      border-radius: 50%;
+      background: var(--success);
+      animation: pulse 2s ease infinite;
+    }
+
+    @keyframes pulse {
+      0%, 100% { opacity: 1; transform: scale(1); }
+      50%       { opacity: 0.4; transform: scale(1.4); }
+    }
+
+    /* Stat Cards */
+    .stats-row {
+      display: grid;
+      grid-template-columns: repeat(3, 1fr);
+      gap: 16px;
+      margin-bottom: 40px;
+    }
+
+    .stat-card {
+      background: var(--surface);
+      border: 1px solid var(--border);
+      border-radius: 14px;
+      padding: 28px 28px 24px;
+      position: relative;
+      overflow: hidden;
+    }
+
+    .stat-card::after {
+      content: '';
+      position: absolute;
+      top: 0; left: 0; right: 0;
+      height: 2px;
+    }
+
+    .stat-card.c-links::after  { background: var(--accent); }
+    .stat-card.c-clicks::after { background: var(--accent2); }
+    .stat-card.c-top::after    { background: var(--success); }
+
+    .stat-label {
+      font-size: 0.72rem;
+      font-weight: 500;
+      letter-spacing: 0.1em;
+      text-transform: uppercase;
+      color: var(--muted);
+      margin-bottom: 10px;
+    }
+
+    .stat-value {
+      font-family: 'Syne', sans-serif;
+      font-weight: 700;
+      font-size: 2.6rem;
+      letter-spacing: -0.03em;
+      line-height: 1;
+      color: var(--text);
+    }
+
+    .stat-sub {
+      font-size: 0.78rem;
+      color: var(--muted);
+      margin-top: 8px;
+    }
+
+    /* Shorten Form  */
+    .form-card {
+      background: var(--surface);
+      border: 1px solid var(--border);
+      border-radius: 14px;
+      padding: 32px;
+      margin-bottom: 40px;
+    }
+
+    .form-title {
+      font-family: 'Syne', sans-serif;
+      font-weight: 700;
+      font-size: 1.05rem;
+      margin-bottom: 20px;
+      color: var(--text);
+    }
+
+    .form-row {
+      display: flex;
+      gap: 12px;
+    }
+
+    .url-input {
+      flex: 1;
+      background: var(--bg);
+      border: 1px solid var(--border);
+      border-radius: 10px;
+      padding: 13px 18px;
+      font-family: 'JetBrains Mono', monospace;
+      font-size: 0.85rem;
+      color: var(--text);
+      outline: none;
+      transition: border-color 0.2s;
+    }
+
+    .url-input::placeholder { color: var(--muted); }
+    .url-input:focus { border-color: var(--accent); }
+
+    .btn-shorten {
+      background: var(--accent);
+      color: #fff;
+      border: none;
+      border-radius: 10px;
+      padding: 13px 28px;
+      font-family: 'Syne', sans-serif;
+      font-weight: 600;
+      font-size: 0.9rem;
+      cursor: pointer;
+      white-space: nowrap;
+      transition: opacity 0.2s, transform 0.15s;
+    }
+
+    .btn-shorten:hover   { opacity: 0.88; }
+    .btn-shorten:active  { transform: scale(0.97); }
+    .btn-shorten:disabled { opacity: 0.4; cursor: not-allowed; }
+
+    /* Result strip */
+    .result-strip {
+      margin-top: 16px;
+      background: var(--bg);
+      border: 1px solid var(--border);
+      border-radius: 10px;
+      padding: 14px 18px;
+      display: none;
+      align-items: center;
+      justify-content: space-between;
+      gap: 12px;
+    }
+
+    .result-strip.visible { display: flex; }
+
+    .result-url {
+      font-family: 'JetBrains Mono', monospace;
+      font-size: 0.85rem;
+      color: var(--accent);
+    }
+
+    .btn-copy {
+      background: transparent;
+      border: 1px solid var(--border);
+      border-radius: 7px;
+      padding: 6px 14px;
+      color: var(--muted);
+      font-family: 'Inter', sans-serif;
+      font-size: 0.75rem;
+      cursor: pointer;
+      transition: color 0.2s, border-color 0.2s;
+      white-space: nowrap;
+    }
+
+    .btn-copy:hover { color: var(--text); border-color: var(--accent); }
+    .btn-copy.copied { color: var(--success); border-color: var(--success); }
+
+    /* Search Bar */
+    .table-controls {
+      display: flex;
+      align-items: center;
+      gap: 12px;
+      margin-bottom: 20px;
+    }
+
+    .search-wrapper {
+      flex: 1;
+      position: relative;
+    }
+
+    .search-input {
+      width: 100%;
+      background: var(--surface);
+      border: 1px solid var(--border);
+      border-radius: 10px;
+      padding: 11px 16px 11px 38px;
+      font-family: 'Inter', sans-serif;
+      font-size: 0.87rem;
+      color: var(--text);
+      outline: none;
+      transition: border-color 0.2s;
+    }
+
+    .search-input::placeholder { color: var(--muted); }
+    .search-input:focus { border-color: var(--accent); }
+
+    .search-icon {
+      position: absolute;
+      left: 12px;
+      top: 50%;
+      transform: translateY(-50%);
+      color: var(--muted);
+      font-size: 0.9rem;
+      pointer-events: none;
+    }
+
+    .btn-clear-search {
+      background: transparent;
+      border: 1px solid var(--border);
+      color: var(--muted);
+      border-radius: 8px;
+      padding: 8px 14px;
+      font-size: 0.75rem;
+      cursor: pointer;
+      transition: color 0.2s, border-color 0.2s;
+      white-space: nowrap;
+    }
+
+    .btn-clear-search:hover { color: var(--text); border-color: var(--danger); }
+    .btn-clear-search.hidden { display: none; }
+
+    /* Table Header */
+    .table-header {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      margin-bottom: 16px;
+    }
+
+    .table-title {
+      font-family: 'Syne', sans-serif;
+      font-weight: 700;
+      font-size: 1.05rem;
+    }
+
+    .table-meta {
+      font-size: 0.8rem;
+      color: var(--muted);
+    }
+
+    .refresh-btn {
+      background: transparent;
+      border: 1px solid var(--border);
+      color: var(--muted);
+      border-radius: 8px;
+      padding: 7px 14px;
+      font-size: 0.75rem;
+      cursor: pointer;
+      transition: color 0.2s, border-color 0.2s;
+    }
+
+    .refresh-btn:hover { color: var(--text); border-color: var(--accent); }
+
+    /* Table */
+    table {
+      width: 100%;
+      border-collapse: collapse;
+    }
+
+    thead tr {
+      border-bottom: 1px solid var(--border);
+    }
+
+    th {
+      font-size: 0.7rem;
+      font-weight: 500;
+      letter-spacing: 0.1em;
+      text-transform: uppercase;
+      color: var(--muted);
+      padding: 0 16px 14px;
+      text-align: left;
+    }
+
+    tbody tr {
+      border-bottom: 1px solid var(--border);
+      transition: background 0.15s;
+    }
+
+    tbody tr:last-child { border-bottom: none; }
+    tbody tr:hover { background: var(--surface); }
+
+    td {
+      padding: 16px;
+      font-size: 0.87rem;
+      vertical-align: middle;
+    }
+
+    .code-pill {
+      display: inline-block;
+      background: rgba(92, 111, 255, 0.12);
+      color: var(--accent);
+      font-family: 'JetBrains Mono', monospace;
+      font-size: 0.8rem;
+      padding: 4px 10px;
+      border-radius: 6px;
+      border: 1px solid rgba(92, 111, 255, 0.2);
+    }
+
+    .code-pill.highlight {
+      background: rgba(92, 111, 255, 0.25);
+      border-color: rgba(92, 111, 255, 0.4);
+    }
+
+    .orig-url {
+      color: var(--muted);
+      font-size: 0.82rem;
+      max-width: 360px;
+      overflow: hidden;
+      text-overflow: ellipsis;
+      white-space: nowrap;
+      display: block;
+    }
+
+    .orig-url.highlight {
+      color: var(--accent2);
+    }
+
+    .clicks-badge {
+      font-family: 'JetBrains Mono', monospace;
+      font-size: 0.82rem;
+      color: var(--success);
+    }
+
+    .short-link {
+      font-family: 'JetBrains Mono', monospace;
+      font-size: 0.8rem;
+      color: var(--text);
+      text-decoration: none;
+    }
+
+    .short-link:hover { color: var(--accent); }
+
+    .td-copy {
+      text-align: right;
+    }
+
+    /* Empty state */
+    .empty-state {
+      text-align: center;
+      padding: 64px 24px;
+      color: var(--muted);
+    }
+
+    .empty-state .icon { font-size: 2rem; margin-bottom: 12px; }
+    .empty-state p { font-size: 0.9rem; }
+
+    /* Toast */
+    .toast {
+      position: fixed;
+      bottom: 32px;
+      right: 32px;
+      background: var(--surface);
+      border: 1px solid var(--border);
+      border-radius: 10px;
+      padding: 14px 22px;
+      font-size: 0.85rem;
+      color: var(--text);
+      opacity: 0;
+      transform: translateY(10px);
+      transition: opacity 0.25s, transform 0.25s;
+      pointer-events: none;
+      z-index: 999;
+    }
+
+    .toast.show { opacity: 1; transform: translateY(0); }
+    .toast.success { border-color: var(--success); color: var(--success); }
+    .toast.error   { border-color: var(--danger); color: var(--danger); }
+
+    /* Error message */
+    .form-error {
+      font-size: 0.8rem;
+      color: var(--danger);
+      margin-top: 10px;
+      display: none;
+    }
+
+    .form-error.visible { display: block; }
+
+    @media (max-width: 700px) {
+      .stats-row { grid-template-columns: 1fr; }
+      .form-row  { flex-direction: column; }
+      .table-controls { flex-direction: column; }
+      .search-wrapper { width: 100%; }
+      header     { flex-direction: column; align-items: flex-start; gap: 16px; }
+    }
+  </style>
+</head>
+<body>
+<div class="shell">
+
+  <!-- Header -->
+  <header>
+    <div class="wordmark">short<span>.</span>ly</div>
+    <div class="live-badge">Live</div>
+  </header>
+
+  <!-- Stat Cards -->
+  <div class="stats-row">
+    <div class="stat-card c-links">
+      <div class="stat-label">Total Links</div>
+      <div class="stat-value" id="total-links">—</div>
+      <div class="stat-sub">shortened URLs</div>
+    </div>
+    <div class="stat-card c-clicks">
+      <div class="stat-label">Total Clicks</div>
+      <div class="stat-value" id="total-clicks">—</div>
+      <div class="stat-sub">across all links</div>
+    </div>
+    <div class="stat-card c-top">
+      <div class="stat-label">Top Link</div>
+      <div class="stat-value" id="top-clicks">—</div>
+      <div class="stat-sub" id="top-code">clicks on most visited</div>
+    </div>
+  </div>
+
+  <!-- Shorten Form -->
+  <div class="form-card">
+    <div class="form-title">Shorten a URL</div>
+    <div class="form-row">
+      <input
+        class="url-input"
+        id="url-input"
+        type="text"
+        placeholder="https://your-long-url.com/goes/here"
+        autocomplete="off"
+      />
+      <button class="btn-shorten" id="shorten-btn" onclick="shortenUrl()">Shorten</button>
+    </div>
+    <div class="form-error" id="form-error"></div>
+    <div class="result-strip" id="result-strip">
+      <span class="result-url" id="result-url"></span>
+      <button class="btn-copy" id="result-copy" onclick="copyResult()">Copy</button>
+    </div>
+  </div>
+
+  <!-- Table Header & Controls -->
+  <div class="table-header">
+    <div>
+      <div class="table-title">All Links</div>
+    </div>
+    <button class="refresh-btn" onclick="loadData()">↻ Refresh</button>
+  </div>
+
+  <!-- Search Bar -->
+  <div class="table-controls">
+    <div class="search-wrapper">
+      <span class="search-icon">🔍</span>
+      <input
+        class="search-input"
+        id="search-input"
+        type="text"
+        placeholder="Search by code or URL…"
+        autocomplete="off"
+        onkeyup="filterTable()"
+      />
+    </div>
+    <button class="btn-clear-search hidden" id="clear-search-btn" onclick="clearSearch()">Clear</button>
+  </div>
+
+  <!-- Results Meta -->
+  <div class="table-meta" id="table-meta" style="margin-bottom: 16px; display: none;"></div>
+
+  <!-- Table -->
+  <table id="links-table">
+    <thead>
+      <tr>
+        <th>Code</th>
+        <th>Original URL</th>
+        <th>Short Link</th>
+        <th>Clicks</th>
+        <th></th>
+      </tr>
+    </thead>
+    <tbody id="table-body">
+      <tr>
+        <td colspan="5">
+          <div class="empty-state">
+            <div class="icon">⛓️</div>
+            <p>Loading links…</p>
+          </div>
+        </td>
+      </tr>
+    </tbody>
+  </table>
+
+</div>
+
+<!-- Toast -->
+<div class="toast" id="toast"></div>
+
+<script>
+  const BASE = window.location.origin;
+  let allLinks = [];
+  let lastResultUrl = '';
+
+  // Load all links from /urls
+  async function loadData() {
+    try {
+      const res = await fetch(`${BASE}/urls`);
+      if (!res.ok) throw new Error('Failed to fetch');
+      allLinks = await res.json();
+      renderStats(allLinks);
+      renderTable(allLinks);
+      clearSearch();
+    } catch (e) {
+      showToast('Could not reach the API', 'error');
+    }
+  }
+
+  // Stats
+  function renderStats(links) {
+    document.getElementById('total-links').textContent = links.length;
+    const totalClicks = links.reduce((s, l) => s + l.click_count, 0);
+    document.getElementById('total-clicks').textContent = totalClicks;
+
+    if (links.length > 0) {
+      const top = links.reduce((a, b) => a.click_count > b.click_count ? a : b);
+      document.getElementById('top-clicks').textContent = top.click_count;
+      document.getElementById('top-code').textContent = `clicks on /${top.short_code}`;
+    } else {
+      document.getElementById('top-clicks').textContent = '0';
+      document.getElementById('top-code').textContent = 'no links yet';
+    }
+  }
+
+  // Table
+  function renderTable(links) {
+    const tbody = document.getElementById('table-body');
+    if (links.length === 0) {
+      tbody.innerHTML = `
+        <tr><td colspan="5">
+          <div class="empty-state">
+            <div class="icon">🔗</div>
+            <p>No links yet — shorten your first URL above.</p>
+          </div>
+        </td></tr>`;
+      document.getElementById('table-meta').style.display = 'none';
+      return;
+    }
+
+    // Sort by most clicks first
+    const sorted = [...links].sort((a, b) => b.click_count - a.click_count);
+
+    tbody.innerHTML = sorted.map(link => {
+      const short = `${BASE}/s/${link.short_code}`;
+      return `
+        <tr>
+          <td><span class="code-pill">${link.short_code}</span></td>
+          <td><span class="orig-url" title="${link.original_url}">${link.original_url}</span></td>
+          <td><a class="short-link" href="${short}" target="_blank">${short}</a></td>
+          <td><span class="clicks-badge">${link.click_count}</span></td>
+          <td class="td-copy">
+            <button class="btn-copy" onclick="copyText('${short}', this)">Copy</button>
+          </td>
+        </tr>`;
+    }).join('');
+
+    document.getElementById('table-meta').textContent = `Showing ${sorted.length} link${sorted.length !== 1 ? 's' : ''}`;
+    document.getElementById('table-meta').style.display = 'block';
+  }
+
+  // Search & Filter
+  function filterTable() {
+    const query = document.getElementById('search-input').value.toLowerCase().trim();
+    const tbody = document.getElementById('table-body');
+    const rows = tbody.querySelectorAll('tr');
+    let visibleCount = 0;
+
+    if (!query) {
+      rows.forEach(row => {
+        row.style.display = '';
+        row.querySelectorAll('.code-pill, .orig-url').forEach(el => {
+          el.classList.remove('highlight');
+        });
+      });
+      document.getElementById('clear-search-btn').classList.add('hidden');
+      document.getElementById('table-meta').textContent = `Showing ${allLinks.length} link${allLinks.length !== 1 ? 's' : ''}`;
+      return;
+    }
+
+    document.getElementById('clear-search-btn').classList.remove('hidden');
+
+    rows.forEach(row => {
+      const codePill = row.querySelector('.code-pill');
+      const origUrl = row.querySelector('.orig-url');
+
+      if (!codePill || !origUrl) return;
+
+      const code = codePill.textContent.toLowerCase();
+      const url = origUrl.textContent.toLowerCase();
+
+      const codeMatch = code.includes(query);
+      const urlMatch = url.includes(query);
+
+      if (codeMatch || urlMatch) {
+        row.style.display = '';
+        visibleCount++;
+
+        if (codeMatch) codePill.classList.add('highlight');
+        if (urlMatch) origUrl.classList.add('highlight');
+      } else {
+        row.style.display = 'none';
+        codePill.classList.remove('highlight');
+        origUrl.classList.remove('highlight');
+      }
+    });
+
+    document.getElementById('table-meta').textContent = `Found ${visibleCount} result${visibleCount !== 1 ? 's' : ''} for "${query}"`;
+    document.getElementById('table-meta').style.display = visibleCount > 0 ? 'block' : 'none';
+  }
+
+  function clearSearch() {
+    document.getElementById('search-input').value = '';
+    document.getElementById('clear-search-btn').classList.add('hidden');
+    filterTable();
+  }
+
+  // Shorten
+  async function shortenUrl() {
+    const input  = document.getElementById('url-input');
+    const btn    = document.getElementById('shorten-btn');
+    const errEl  = document.getElementById('form-error');
+    const strip  = document.getElementById('result-strip');
+    const urlEl  = document.getElementById('result-url');
+
+    const url = input.value.trim();
+
+    errEl.classList.remove('visible');
+    strip.classList.remove('visible');
+
+    if (!url) {
+      showError('Please enter a URL.');
+      return;
+    }
+
+    btn.disabled = true;
+    btn.textContent = 'Shortening…';
+
+    try {
+      const res = await fetch(`${BASE}/shorten`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ original_url: url })
+      });
+
+      if (!res.ok) {
+        const err = await res.json();
+        const msg = err?.detail?.[0]?.msg || 'Invalid URL. Try including https://';
+        showError(msg);
+        return;
+      }
+
+      const data = await res.json();
+      lastResultUrl = data.short_url;
+      urlEl.textContent = data.short_url;
+      strip.classList.add('visible');
+      input.value = '';
+      showToast('Link shortened!', 'success');
+      loadData();
+
+    } catch (e) {
+      showError('Could not reach the API. Is the server running?');
+    } finally {
+      btn.disabled = false;
+      btn.textContent = 'Shorten';
+    }
+  }
+
+  // Copy helpers
+  async function copyText(text, btn) {
+    try {
+      await navigator.clipboard.writeText(text);
+      const orig = btn.textContent;
+      btn.textContent = 'Copied!';
+      btn.classList.add('copied');
+      setTimeout(() => { btn.textContent = orig; btn.classList.remove('copied'); }, 1800);
+    } catch { showToast('Copy failed', 'error'); }
+  }
+
+  function copyResult() {
+    const btn = document.getElementById('result-copy');
+    copyText(lastResultUrl, btn);
+  }
+
+  // Utilities
+  function showError(msg) {
+    const el = document.getElementById('form-error');
+    el.textContent = msg;
+    el.classList.add('visible');
+  }
+
+  function showToast(msg, type = '') {
+    const t = document.getElementById('toast');
+    t.textContent = msg;
+    t.className = `toast ${type} show`;
+    setTimeout(() => t.classList.remove('show'), 2500);
+  }
+
+  // Enter key on input
+  document.getElementById('url-input').addEventListener('keydown', e => {
+    if (e.key === 'Enter') shortenUrl();
+  });
+
+  // Auto-refresh every 15s
+  loadData();
+  setInterval(loadData, 15000);
+</script>
+</body>
+</html>
