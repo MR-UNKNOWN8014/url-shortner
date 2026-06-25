@@ -6,21 +6,6 @@ Paste a long URL, get a short code back, share it, and watch the click counter g
 
 ---
 
-## Table of Contents
-
-- [[#Overview]]
-- [[#Tech Stack]]
-- [[#Project Structure]]
-- [[#Getting Started]]
-- [[#API Endpoints]]
-- [[#Usage Examples]]
-- [[#Dashboard]]
-- [[#Error Handling]]
-- [[#Database Schema]]
-- [[#Key Design Decisions]]
-
----
-
 ## Overview
 
 This project is a fully functional URL shortener REST API with a built-in analytics dashboard. Short codes are:
